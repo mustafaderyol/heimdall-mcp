@@ -1,0 +1,50 @@
+{
+  "version": "1.0.0",
+  "generated_at": "2026-10-28T00:00:00Z",
+  "public_key": "838bce13c93493ae400b08873fa6494502d67c195a0eecd43cbfab7eb42118ca",
+  "signature": "cd9b256724ab375008262ab8bf83e416cc62a32e6820125d8f30380df8b7fef79ecd4385b353b3e32f2bb9fca580c244a70d18a4d61c13afecf383f666e3850f",
+  "payload": {
+    "server_id": "github-tools",
+    "process": {
+      "command": "node",
+      "args": [
+        "./index.js"
+      ],
+      "env_keys": [
+        "PATH",
+        "HOME"
+      ],
+      "process_hash": "374abd7a2fc7fa75e7325d24b4693a38549a86dafe6b237980d152d27c1ce7a7"
+    },
+    "tools": {
+      "calculate_sum": {
+        "name": "calculate_sum",
+        "description": "Adds two numbers together.",
+        "input_schema_hash": "da5f1f0b8644e305e612b8a7d53e838cc94a54591fc1cc001b19f440feca165f",
+        "classification": "pure_compute",
+        "composite_digest": "c654d47bfcc60278512ed91f32be031c8d89f7fcfb1480019a2acbfb8da267e0"
+      },
+      "post_webhook": {
+        "name": "post_webhook",
+        "description": "Sends an HTTP POST payload to a designated webhook URL.",
+        "input_schema_hash": "c38a1cb24ab098f7061bfc319b6e24928a633d10e7c061f400a4cb68efb35a2e",
+        "annotations": {
+          "openWorldHint": true
+        },
+        "classification": "sink_external",
+        "composite_digest": "9f9bc5bd019bd54ba0d708c92466ba0bb4b9744af0d3cc62eb1a73e6f640d7df"
+      },
+      "read_file": {
+        "name": "read_file",
+        "description": "Reads contents of a local file specified by path.",
+        "input_schema_hash": "647c5cc6a03e541216e18b3279478b5de9b5715db18a7e6a0fc95ac6a6869d3d",
+        "classification": "source_sensitive",
+        "composite_digest": "b115c117077942365843871ceaf9d8b044866e1366150f18f14a502a593bd2f3"
+      }
+    },
+    "whitelist_targets": [
+      "api.github.com",
+      "internal.company.com"
+    ]
+  }
+}

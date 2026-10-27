@@ -1,0 +1,51 @@
+[package]
+name = "heimdall-mcp"
+version = "0.1.0"
+edition = "2021"
+authors = ["Mustafa Deryol"]
+description = "Heimdall MCP: Cryptographic Schema Pinning & Deterministic Information Flow Firewall"
+
+default-run = "heimdall"
+
+[[bin]]
+name = "heimdall"
+path = "src/main.rs"
+
+[lib]
+name = "heimdall_mcp"
+path = "src/lib.rs"
+
+[dependencies]
+# Async Runtime & Transport
+tokio = { version = "1.43", features = ["full"] }
+tokio-stream = { version = "0.1", features = ["sync"] }
+axum = { version = "0.8", features = ["tokio", "http1", "http2"] }
+reqwest = { version = "0.12", features = ["json", "stream"] }
+tower-http = { version = "0.6", features = ["cors", "trace"] }
+
+# Serialization & JSON-RPC
+serde = { version = "1.0", features = ["derive"] }
+serde_json = { version = "1.0", features = ["raw_value"] }
+serde_json_canonicalizer = "0.4.1"
+
+# Cryptography & Hash
+sha2 = "0.10"
+ed25519-dalek = { version = "2.1", features = ["rand_core"] }
+rand = "0.8"
+
+# Fast Pattern Matching & Encodings
+aho-corasick = "1.1"
+base64 = "0.22"
+hex = "0.4"
+unicode-normalization = "0.1"
+regex = "1.11"
+
+# CLI & Observability
+clap = { version = "4.5", features = ["derive"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
+colored = "3.0"
+url = "2.5"
+
+[dev-dependencies]
+tempfile = "3.17"
