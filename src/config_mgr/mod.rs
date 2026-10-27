@@ -24,7 +24,13 @@ impl ConfigManager {
         let cursor_paths = [
             home_path.join(".cursor").join("mcp.json"),
             home_path.join(".cursor").join("rules").join("mcp.json"),
-            home_path.join("Library").join("Application Support").join("Cursor").join("User").join("globalStorage").join("cursor.mcp.json"),
+            home_path
+                .join("Library")
+                .join("Application Support")
+                .join("Cursor")
+                .join("User")
+                .join("globalStorage")
+                .join("cursor.mcp.json"),
         ];
 
         for p in &cursor_paths {
@@ -39,9 +45,20 @@ impl ConfigManager {
 
         // 2. Claude Desktop config locations
         let claude_paths = [
-            home_path.join("Library").join("Application Support").join("Claude").join("claude_desktop_config.json"),
-            home_path.join(".config").join("Claude").join("claude_desktop_config.json"),
-            home_path.join("AppData").join("Roaming").join("Claude").join("claude_desktop_config.json"),
+            home_path
+                .join("Library")
+                .join("Application Support")
+                .join("Claude")
+                .join("claude_desktop_config.json"),
+            home_path
+                .join(".config")
+                .join("Claude")
+                .join("claude_desktop_config.json"),
+            home_path
+                .join("AppData")
+                .join("Roaming")
+                .join("Claude")
+                .join("claude_desktop_config.json"),
         ];
 
         for p in &claude_paths {
@@ -71,7 +88,10 @@ impl ConfigManager {
     }
 
     /// Wraps an MCP host configuration so that all servers are executed through mcp-lock proxy
-    pub fn wrap_config<P: AsRef<Path>>(config_path: P, mcplock_bin_path: Option<&str>) -> Result<(usize, PathBuf)> {
+    pub fn wrap_config<P: AsRef<Path>>(
+        config_path: P,
+        mcplock_bin_path: Option<&str>,
+    ) -> Result<(usize, PathBuf)> {
         let path_ref = config_path.as_ref();
         if !path_ref.exists() {
             return Err(McpLockError::InvalidConfiguration(format!(
@@ -91,10 +111,16 @@ impl ConfigManager {
         if let Some(servers) = parsed.get_mut("mcpServers").and_then(|s| s.as_object_mut()) {
             for (server_id, server_cfg) in servers.iter_mut() {
                 if let Some(cfg_obj) = server_cfg.as_object_mut() {
-                    let curr_command = cfg_obj.get("command").and_then(|v| v.as_str()).unwrap_or("");
+                    let curr_command = cfg_obj
+                        .get("command")
+                        .and_then(|v| v.as_str())
+                        .unwrap_or("");
 
                     // Check if already wrapped
-                    if curr_command == bin_name || curr_command.ends_with("/heimdall") || curr_command.ends_with("/heimdall-mcp") {
+                    if curr_command == bin_name
+                        || curr_command.ends_with("/heimdall")
+                        || curr_command.ends_with("/heimdall-mcp")
+                    {
                         continue;
                     }
 
@@ -111,7 +137,10 @@ impl ConfigManager {
 
                     // Generate lockfile path for this server
                     let lockfile_name = format!("heimdall-lock.{}.json", server_id);
-                    let lockfile_path = path_ref.parent().unwrap_or_else(|| Path::new(".")).join(&lockfile_name);
+                    let lockfile_path = path_ref
+                        .parent()
+                        .unwrap_or_else(|| Path::new("."))
+                        .join(&lockfile_name);
 
                     // Create lockfile manifest if not existing
                     if !lockfile_path.exists() {
@@ -158,7 +187,10 @@ impl ConfigManager {
     pub fn unwrap_config<P: AsRef<Path>>(config_path: P) -> Result<PathBuf> {
         let path_ref = config_path.as_ref();
         let parent = path_ref.parent().unwrap_or_else(|| Path::new("."));
-        let file_stem = path_ref.file_stem().and_then(|s| s.to_str()).unwrap_or("mcp");
+        let file_stem = path_ref
+            .file_stem()
+            .and_then(|s| s.to_str())
+            .unwrap_or("mcp");
 
         // Find backups matching file_stem.backup.*.json
         let mut backups = Vec::new();
@@ -191,11 +223,18 @@ impl ConfigManager {
 
         if let Some(servers) = parsed.get("mcpServers").and_then(|s| s.as_object()) {
             for (server_id, server_cfg) in servers {
-                let cmd = server_cfg.get("command").and_then(|v| v.as_str()).unwrap_or("");
+                let cmd = server_cfg
+                    .get("command")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("");
                 let args: Vec<String> = server_cfg
                     .get("args")
                     .and_then(|a| a.as_array())
-                    .map(|arr| arr.iter().filter_map(|v| v.as_str().map(String::from)).collect())
+                    .map(|arr| {
+                        arr.iter()
+                            .filter_map(|v| v.as_str().map(String::from))
+                            .collect()
+                    })
                     .unwrap_or_default();
 
                 let is_protected = cmd.contains("heimdall");
@@ -213,7 +252,12 @@ impl ConfigManager {
                 }
 
                 // Check dangerous commands
-                if cmd == "bash" || cmd == "sh" || cmd == "zsh" || cmd == "cmd" || cmd == "powershell" {
+                if cmd == "bash"
+                    || cmd == "sh"
+                    || cmd == "zsh"
+                    || cmd == "cmd"
+                    || cmd == "powershell"
+                {
                     risks.push(ServerRisk {
                         severity: RiskSeverity::High,
                         title: "Raw Shell Execution Primitive".to_string(),
@@ -227,12 +271,19 @@ impl ConfigManager {
                 if let Some(env) = server_cfg.get("env").and_then(|e| e.as_object()) {
                     for key in env.keys() {
                         let upper = key.to_uppercase();
-                        if upper.contains("SECRET") || upper.contains("KEY") || upper.contains("TOKEN") {
+                        if upper.contains("SECRET")
+                            || upper.contains("KEY")
+                            || upper.contains("TOKEN")
+                        {
                             risks.push(ServerRisk {
                                 severity: RiskSeverity::Medium,
                                 title: format!("Plaintext Secret in Configuration ({})", key),
-                                description: "Sensitive API tokens stored in unencrypted configuration file.".to_string(),
-                                remediation: "Pass secrets via OS keychain or scoped environment variables.".to_string(),
+                                description:
+                                    "Sensitive API tokens stored in unencrypted configuration file."
+                                        .to_string(),
+                                remediation:
+                                    "Pass secrets via OS keychain or scoped environment variables."
+                                        .to_string(),
                             });
                             overall_score = overall_score.saturating_sub(5);
                         }
@@ -300,9 +351,20 @@ pub struct AuditReport {
 
 impl AuditReport {
     pub fn print_terminal_summary(&self) {
-        println!("{}", "\n================================================================================".cyan());
-        println!("       Heimdall MCP SECURITY AUDIT & POSTURE REPORT: Grade {}", self.grade.bold());
-        println!("{}", "================================================================================\n".cyan());
+        println!(
+            "{}",
+            "\n================================================================================"
+                .cyan()
+        );
+        println!(
+            "       Heimdall MCP SECURITY AUDIT & POSTURE REPORT: Grade {}",
+            self.grade.bold()
+        );
+        println!(
+            "{}",
+            "================================================================================\n"
+                .cyan()
+        );
 
         let score_colored = if self.overall_score >= 80 {
             format!("{}/100", self.overall_score).bold().green()

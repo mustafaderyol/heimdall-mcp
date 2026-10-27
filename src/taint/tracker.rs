@@ -42,7 +42,10 @@ impl SessionTaintEngine {
 
     /// Records output from a SOURCE_UNTRUSTED tool (e.g. web scraper), dropping integrity
     pub fn mark_untrusted_output(&self, source_tool: &str) {
-        self.difc_lattice.write().unwrap().mark_untrusted_read(source_tool);
+        self.difc_lattice
+            .write()
+            .unwrap()
+            .mark_untrusted_read(source_tool);
     }
 
     /// Parses SOURCE_SENSITIVE output, extracts high-entropy secrets, generates 3-offset
@@ -91,7 +94,16 @@ impl SessionTaintEngine {
 
         if let Some(obj) = parsed.as_object() {
             // Check common destination fields
-            for key in ["url", "to", "recipient", "email", "host", "endpoint", "destination", "target"] {
+            for key in [
+                "url",
+                "to",
+                "recipient",
+                "email",
+                "host",
+                "endpoint",
+                "destination",
+                "target",
+            ] {
                 if let Some(val) = obj.get(key).and_then(|v| v.as_str()) {
                     // If URL, extract host
                     if let Ok(parsed_url) = url::Url::parse(val) {
@@ -118,15 +130,16 @@ impl SessionTaintEngine {
         )?;
 
         // 2. Strict isolation high-watermark check
-        if self.strict_isolation_mode && *self.taint_high_watermark.read().unwrap() {
-            if destination.is_none() {
-                return Err(McpLockError::Violation(
-                    SecurityViolation::StrictIsolationPolicyViolation {
-                        sink_tool: sink_tool.to_string(),
-                        reason: "Strict isolation active: Cannot call external sink without verifiable trusted destination".into(),
-                    },
-                ));
-            }
+        if self.strict_isolation_mode
+            && *self.taint_high_watermark.read().unwrap()
+            && destination.is_none()
+        {
+            return Err(McpLockError::Violation(
+                SecurityViolation::StrictIsolationPolicyViolation {
+                    sink_tool: sink_tool.to_string(),
+                    reason: "Strict isolation active: Cannot call external sink without verifiable trusted destination".into(),
+                },
+            ));
         }
 
         let ac_guard = self.automaton.read().unwrap();

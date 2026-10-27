@@ -13,7 +13,12 @@ fn test_shannon_entropy_calculation() {
     let crypto_key = b"K9#m$L2!z@8*qP&1^vX~9wR#5tY*3eW!oI(7uB%4";
     let h_crypto = EntropyAnalyzer::shannon_entropy(crypto_key);
 
-    assert!(h_crypto > h_natural, "Crypto key entropy ({}) must be higher than repetitive text ({})", h_crypto, h_natural);
+    assert!(
+        h_crypto > h_natural,
+        "Crypto key entropy ({}) must be higher than repetitive text ({})",
+        h_crypto,
+        h_natural
+    );
     assert!(h_crypto >= 4.5, "High entropy key should be >= 4.5");
 }
 
@@ -30,7 +35,9 @@ fn test_base64_quantum_alignment_shift_offsets() {
         "data": b64_off0
     });
     assert!(
-        taint.verify_sink_arguments("post_webhook", &call_off0.to_string()).is_err(),
+        taint
+            .verify_sink_arguments("post_webhook", &call_off0.to_string())
+            .is_err(),
         "Offset 0 base64 exfiltration must be caught"
     );
 
@@ -41,7 +48,9 @@ fn test_base64_quantum_alignment_shift_offsets() {
         "data": b64_off1
     });
     assert!(
-        taint.verify_sink_arguments("post_webhook", &call_off1.to_string()).is_err(),
+        taint
+            .verify_sink_arguments("post_webhook", &call_off1.to_string())
+            .is_err(),
         "Offset 1 base64 exfiltration must be caught"
     );
 
@@ -52,7 +61,9 @@ fn test_base64_quantum_alignment_shift_offsets() {
         "data": b64_off2
     });
     assert!(
-        taint.verify_sink_arguments("post_webhook", &call_off2.to_string()).is_err(),
+        taint
+            .verify_sink_arguments("post_webhook", &call_off2.to_string())
+            .is_err(),
         "Offset 2 base64 exfiltration must be caught"
     );
 }
@@ -69,7 +80,9 @@ fn test_hex_encoded_exfiltration_blocked() {
         "token": hex_exfil
     });
 
-    assert!(taint.verify_sink_arguments("post_webhook", &call.to_string()).is_err());
+    assert!(taint
+        .verify_sink_arguments("post_webhook", &call.to_string())
+        .is_err());
 }
 
 #[test]
@@ -88,7 +101,9 @@ fn test_stop_words_prevent_false_positives() {
     });
 
     assert!(
-        taint.verify_sink_arguments("post_webhook", &benign_call.to_string()).is_ok(),
+        taint
+            .verify_sink_arguments("post_webhook", &benign_call.to_string())
+            .is_ok(),
         "Common words in config must NOT trigger false positives"
     );
 }

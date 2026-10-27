@@ -7,7 +7,7 @@ use serde_json::{json, Value};
 use std::collections::{BTreeMap, HashSet};
 use std::path::Path;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "snake_case")]
 pub enum ToolClassification {
     /// Reads sensitive local resources (files, env, database, ssh keys)
@@ -17,13 +17,8 @@ pub enum ToolClassification {
     /// Fetches untrusted external input (web scraping, PR titles, issues)
     SourceUntrusted,
     /// Pure local calculation without side-effects (math, string formatting)
+    #[default]
     PureCompute,
-}
-
-impl Default for ToolClassification {
-    fn default() -> Self {
-        ToolClassification::PureCompute
-    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -108,7 +103,9 @@ impl LockedTool {
         let name = tool
             .get("name")
             .and_then(|v| v.as_str())
-            .ok_or_else(|| McpLockError::InvalidConfiguration("Tool definition missing 'name'".into()))?
+            .ok_or_else(|| {
+                McpLockError::InvalidConfiguration("Tool definition missing 'name'".into())
+            })?
             .to_string();
 
         let description = tool
@@ -127,7 +124,8 @@ impl LockedTool {
 
         let annotations = tool.get("annotations").cloned();
 
-        let derived_class = classification.unwrap_or_else(|| Self::heuristic_classify(&name, &description, tool));
+        let derived_class =
+            classification.unwrap_or_else(|| Self::heuristic_classify(&name, &description, tool));
 
         let composite_digest = Self::compute_composite_digest(
             &name,
@@ -275,8 +273,9 @@ impl Manifest {
 
     /// Verifies the cryptographic Ed25519 signature over the manifest payload.
     pub fn verify_signature(&self) -> Result<()> {
-        let pubkey_bytes = hex::decode(&self.public_key)
-            .map_err(|e| McpLockError::InvalidSignature(format!("Invalid public key hex: {}", e)))?;
+        let pubkey_bytes = hex::decode(&self.public_key).map_err(|e| {
+            McpLockError::InvalidSignature(format!("Invalid public key hex: {}", e))
+        })?;
         let pubkey_arr: [u8; 32] = pubkey_bytes
             .try_into()
             .map_err(|_| McpLockError::InvalidSignature("Public key must be 32 bytes".into()))?;
@@ -322,7 +321,10 @@ impl Manifest {
             };
 
             // Check description
-            let curr_desc = tool_val.get("description").and_then(|v| v.as_str()).unwrap_or("");
+            let curr_desc = tool_val
+                .get("description")
+                .and_then(|v| v.as_str())
+                .unwrap_or("");
             if curr_desc != locked.description {
                 results.push(ToolVerificationResult::RugPull {
                     tool_name: name.to_string(),
@@ -359,7 +361,8 @@ impl Manifest {
                 &curr_input_hash,
                 curr_output_hash.as_deref(),
                 curr_annotations,
-            ).unwrap_or_default();
+            )
+            .unwrap_or_default();
 
             if composite != locked.composite_digest {
                 results.push(ToolVerificationResult::RugPull {
@@ -378,7 +381,12 @@ impl Manifest {
     }
 
     /// Verifies process execution arguments against CVE-2025-54136
-    pub fn verify_process(&self, command: &str, args: &[String], env_keys: &[String]) -> Result<()> {
+    pub fn verify_process(
+        &self,
+        command: &str,
+        args: &[String],
+        env_keys: &[String],
+    ) -> Result<()> {
         if let Some(ref proc) = self.payload.process {
             proc.verify(command, args, env_keys)?;
         }
@@ -394,7 +402,9 @@ impl Manifest {
     pub fn load_from_file<P: AsRef<Path>>(path: P) -> Result<Self> {
         let path_ref = path.as_ref();
         if !path_ref.exists() {
-            return Err(McpLockError::LockfileNotFound(path_ref.to_string_lossy().into()));
+            return Err(McpLockError::LockfileNotFound(
+                path_ref.to_string_lossy().into(),
+            ));
         }
         let raw = std::fs::read_to_string(path_ref)?;
         Canonicalizer::validate_no_duplicate_keys(&raw)?;

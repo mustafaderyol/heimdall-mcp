@@ -33,9 +33,24 @@ impl EntropyAnalyzer {
 
         // Known high-risk credential prefixes
         let prefixes = [
-            "sk-", "sk_live_", "ghp_", "gho_", "ghs_", "ghu_", "glpat-",
-            "AKIA", "ASIA", "xoxb-", "xoxp-", "sq0atp-", "ya29.", "AIza",
-            "-----BEGIN", "bearer ", "token ", "eyJh", // JWT header '{"a'
+            "sk-",
+            "sk_live_",
+            "ghp_",
+            "gho_",
+            "ghs_",
+            "ghu_",
+            "glpat-",
+            "AKIA",
+            "ASIA",
+            "xoxb-",
+            "xoxp-",
+            "sq0atp-",
+            "ya29.",
+            "AIza",
+            "-----BEGIN",
+            "bearer ",
+            "token ",
+            "eyJh", // JWT header '{"a'
         ];
 
         for &p in &prefixes {
@@ -58,13 +73,43 @@ impl EntropyAnalyzer {
     /// Set of common benign keys/words that should never be tainted
     pub fn stop_words() -> HashSet<&'static str> {
         [
-            "type", "version", "id", "status", "name", "description",
-            "properties", "required", "items", "title", "format",
-            "localhost", "127.0.0.1", "true", "false", "null",
-            "object", "string", "number", "integer", "boolean", "array",
-            "application/json", "text/plain", "application/octet-stream",
-            "utf-8", "success", "error", "message", "ok", "result",
-            "tools", "params", "method", "jsonrpc", "content", "text",
+            "type",
+            "version",
+            "id",
+            "status",
+            "name",
+            "description",
+            "properties",
+            "required",
+            "items",
+            "title",
+            "format",
+            "localhost",
+            "127.0.0.1",
+            "true",
+            "false",
+            "null",
+            "object",
+            "string",
+            "number",
+            "integer",
+            "boolean",
+            "array",
+            "application/json",
+            "text/plain",
+            "application/octet-stream",
+            "utf-8",
+            "success",
+            "error",
+            "message",
+            "ok",
+            "result",
+            "tools",
+            "params",
+            "method",
+            "jsonrpc",
+            "content",
+            "text",
         ]
         .iter()
         .copied()
@@ -91,14 +136,19 @@ impl EntropyAnalyzer {
                 // If line is KEY=VALUE (like .env or bash export)
                 if let Some((_k, val)) = trimmed_line.split_once('=') {
                     let clean_val = val.trim_matches(|c| c == '"' || c == '\'' || c == ' ');
-                    if clean_val.len() >= 8 && !stop_set.contains(clean_val.to_lowercase().as_str()) {
+                    if clean_val.len() >= 8 && !stop_set.contains(clean_val.to_lowercase().as_str())
+                    {
                         candidates.insert(clean_val.to_string());
                     }
                 }
 
                 // Split line into word tokens
                 for token in trimmed_line.split(|c: char| {
-                    c.is_whitespace() || matches!(c, '"' | '\'' | ',' | ';' | '{' | '}' | '[' | ']' | '(' | ')')
+                    c.is_whitespace()
+                        || matches!(
+                            c,
+                            '"' | '\'' | ',' | ';' | '{' | '}' | '[' | ']' | '(' | ')'
+                        )
                 }) {
                     let trimmed_token = token.trim();
                     if trimmed_token.len() < 8 {
@@ -110,9 +160,10 @@ impl EntropyAnalyzer {
                     }
 
                     // Candidate if it matches credential shape or has high entropy
-                    if Self::is_credential_shape(trimmed_token) {
-                        candidates.insert(trimmed_token.to_string());
-                    } else if trimmed_token.len() >= 16 && Self::shannon_entropy(trimmed_token.as_bytes()) >= 4.2 {
+                    if Self::is_credential_shape(trimmed_token)
+                        || (trimmed_token.len() >= 16
+                            && Self::shannon_entropy(trimmed_token.as_bytes()) >= 4.2)
+                    {
                         candidates.insert(trimmed_token.to_string());
                     }
                 }
@@ -152,12 +203,13 @@ impl EntropyAnalyzer {
             }
             serde_json::Value::String(s) => {
                 let trimmed = s.trim();
-                if trimmed.len() >= 8 && !stop_set.contains(trimmed.to_lowercase().as_str()) {
-                    if Self::is_credential_shape(trimmed)
-                        || (trimmed.len() >= 12 && Self::shannon_entropy(trimmed.as_bytes()) >= 4.2)
-                    {
-                        out.insert(trimmed.to_string());
-                    }
+                if trimmed.len() >= 8
+                    && !stop_set.contains(trimmed.to_lowercase().as_str())
+                    && (Self::is_credential_shape(trimmed)
+                        || (trimmed.len() >= 12
+                            && Self::shannon_entropy(trimmed.as_bytes()) >= 4.2))
+                {
+                    out.insert(trimmed.to_string());
                 }
             }
             _ => {}

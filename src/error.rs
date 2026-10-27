@@ -102,11 +102,23 @@ impl fmt::Display for HeimdallError {
         match self {
             HeimdallError::Io(e) => write!(f, "IO error: {}", e),
             HeimdallError::Json(e) => write!(f, "JSON error: {}", e),
-            HeimdallError::Canonicalization(msg) => write!(f, "RFC 8785 Canonicalization error: {}", msg),
-            HeimdallError::DuplicateKey(k) => write!(f, "Parser differential defense: Duplicate key detected in JSON: '{}'", k),
-            HeimdallError::LockfileNotFound(path) => write!(f, "heimdall-lock.json not found at: {}", path),
+            HeimdallError::Canonicalization(msg) => {
+                write!(f, "RFC 8785 Canonicalization error: {}", msg)
+            }
+            HeimdallError::DuplicateKey(k) => write!(
+                f,
+                "Parser differential defense: Duplicate key detected in JSON: '{}'",
+                k
+            ),
+            HeimdallError::LockfileNotFound(path) => {
+                write!(f, "heimdall-lock.json not found at: {}", path)
+            }
             HeimdallError::InvalidSignature(msg) => write!(f, "Ed25519 signature invalid: {}", msg),
-            HeimdallError::DigestMismatch { target, expected, actual } => write!(
+            HeimdallError::DigestMismatch {
+                target,
+                expected,
+                actual,
+            } => write!(
                 f,
                 "Digest mismatch for '{}'. Expected: {}, Actual: {}",
                 target, expected, actual

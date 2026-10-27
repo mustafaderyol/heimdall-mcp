@@ -65,7 +65,11 @@ impl DifcLattice {
             TargetCategory::Untrusted
         } else if self.trusted_targets.is_empty() {
             TargetCategory::Unknown
-        } else if self.trusted_targets.iter().any(|t| clean == *t || clean.ends_with(&format!(".{}", t)) || clean.contains(t)) {
+        } else if self
+            .trusted_targets
+            .iter()
+            .any(|t| clean == *t || clean.ends_with(&format!(".{}", t)) || clean.contains(t))
+        {
             TargetCategory::Trusted
         } else {
             TargetCategory::Unknown
@@ -84,35 +88,34 @@ impl DifcLattice {
 
         // 1. Strict Isolation check: If high watermark sensitive data is read,
         // sink call is blocked unless target is strictly in P_T
-        if strict_isolation && self.confidentiality == ConfidentialityLabel::Sensitive {
-            if category != TargetCategory::Trusted {
-                return Err(McpLockError::Violation(
-                    SecurityViolation::StrictIsolationPolicyViolation {
-                        sink_tool: sink_tool.to_string(),
-                        reason: format!(
-                            "High-watermark taint active. External sink call to '{}' rejected because target is not in P_T whitelist.",
-                            dest
-                        ),
-                    },
-                ));
-            }
+        if strict_isolation
+            && self.confidentiality == ConfidentialityLabel::Sensitive
+            && category != TargetCategory::Trusted
+        {
+            return Err(McpLockError::Violation(
+                SecurityViolation::StrictIsolationPolicyViolation {
+                    sink_tool: sink_tool.to_string(),
+                    reason: format!(
+                        "High-watermark taint active. External sink call to '{}' rejected because target is not in P_T whitelist.",
+                        dest
+                    ),
+                },
+            ));
         }
 
         // 2. Integrity Lattice Check: If session integrity is dropped to UNTRUSTED
         // by untrusted inputs (e.g. web scraping / PR comments),
         // SINK_EXTERNAL to unknown (P_?) or untrusted (P_U) is blocked.
         // This stops P3 Parameter Manipulation attacks!
-        if self.integrity == IntegrityLabel::Untrusted {
-            if category != TargetCategory::Trusted {
-                return Err(McpLockError::Violation(
-                    SecurityViolation::IntegrityPolicyViolation {
-                        source_untrusted: self.last_untrusted_source.clone().unwrap_or_else(|| "untrusted_input".into()),
-                        target_sink: sink_tool.to_string(),
-                        destination: dest.to_string(),
-                        reason: "Integrity dropped to UNTRUSTED. Calling external sink with non-whitelisted target is blocked by DIFC lattice.".to_string(),
-                    },
-                ));
-            }
+        if self.integrity == IntegrityLabel::Untrusted && category != TargetCategory::Trusted {
+            return Err(McpLockError::Violation(
+                SecurityViolation::IntegrityPolicyViolation {
+                    source_untrusted: self.last_untrusted_source.clone().unwrap_or_else(|| "untrusted_input".into()),
+                    target_sink: sink_tool.to_string(),
+                    destination: dest.to_string(),
+                    reason: "Integrity dropped to UNTRUSTED. Calling external sink with non-whitelisted target is blocked by DIFC lattice.".to_string(),
+                },
+            ));
         }
 
         Ok(())

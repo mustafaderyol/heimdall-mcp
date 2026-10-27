@@ -39,11 +39,17 @@ impl StreamableHttpServer {
                     || clean.starts_with("http://127.0.0.1")
                     || clean.starts_with("vscode-webview://")
                     || clean.starts_with("cursor://")
-                    || self.allowed_origins.iter().any(|o| clean == o.to_lowercase())
+                    || self
+                        .allowed_origins
+                        .iter()
+                        .any(|o| clean == o.to_lowercase())
                 {
                     return true;
                 }
-                warn!("DNS Rebinding Defense: Blocked unauthorized Origin: {}", origin_str);
+                warn!(
+                    "DNS Rebinding Defense: Blocked unauthorized Origin: {}",
+                    origin_str
+                );
                 return false;
             }
         }
@@ -70,14 +76,12 @@ async fn handle_mcp_post(
 
     // 3. Process request through mcp-lock proxy logic
     match server.proxy.handle_client_to_server(&raw_req).await {
-        Ok(Some(resp_json)) => {
-            (
-                StatusCode::OK,
-                [("Content-Type", "application/json")],
-                resp_json,
-            )
-                .into_response()
-        }
+        Ok(Some(resp_json)) => (
+            StatusCode::OK,
+            [("Content-Type", "application/json")],
+            resp_json,
+        )
+            .into_response(),
         Ok(None) => (StatusCode::NO_CONTENT, "").into_response(),
         Err(e) => {
             warn!("Streamable HTTP Proxy error: {}", e);

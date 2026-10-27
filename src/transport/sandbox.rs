@@ -15,10 +15,7 @@ pub struct SandboxManager;
 impl SandboxManager {
     /// Generates macOS seatbelt (sandbox-exec) configuration profile scheme
     #[cfg(target_os = "macos")]
-    pub fn generate_macos_seatbelt_profile(
-        allowed_dir: &Path,
-        allow_network: bool,
-    ) -> String {
+    pub fn generate_macos_seatbelt_profile(allowed_dir: &Path, allow_network: bool) -> String {
         let mut profile = String::from("(version 1)\n(deny default)\n");
         // Allow basic execution and shared libraries
         profile.push_str("(allow process-exec)\n");
@@ -39,7 +36,9 @@ impl SandboxManager {
         }
 
         // Explicitly deny sensitive personal paths
-        profile.push_str("(deny file* (regex #\"/\\.ssh/\") (regex #\"/\\.cursor/\") (regex #\"/\\.aws/\"))\n");
+        profile.push_str(
+            "(deny file* (regex #\"/\\.ssh/\") (regex #\"/\\.cursor/\") (regex #\"/\\.aws/\"))\n",
+        );
 
         profile
     }
@@ -57,11 +56,7 @@ impl SandboxManager {
             SandboxProfile::ScopedFilesystem | SandboxProfile::PureCompute => {
                 let allow_net = profile != SandboxProfile::PureCompute;
                 let seatbelt_script = Self::generate_macos_seatbelt_profile(working_dir, allow_net);
-                let mut sandbox_args = vec![
-                    "-p".to_string(),
-                    seatbelt_script,
-                    command.to_string(),
-                ];
+                let mut sandbox_args = vec!["-p".to_string(), seatbelt_script, command.to_string()];
                 sandbox_args.extend_from_slice(args);
                 ("sandbox-exec".to_string(), sandbox_args)
             }

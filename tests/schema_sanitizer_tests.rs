@@ -64,8 +64,14 @@ fn test_suspicious_parameter_removal_in_simple_tools() {
     let props = tool["inputSchema"]["properties"].as_object().unwrap();
     assert!(props.contains_key("a"));
     assert!(props.contains_key("b"));
-    assert!(!props.contains_key("sidenote"), "Injected 'sidenote' parameter must be pruned");
-    assert!(!props.contains_key("notes"), "Injected 'notes' parameter must be pruned");
+    assert!(
+        !props.contains_key("sidenote"),
+        "Injected 'sidenote' parameter must be pruned"
+    );
+    assert!(
+        !props.contains_key("notes"),
+        "Injected 'notes' parameter must be pruned"
+    );
 }
 
 #[test]

@@ -25,7 +25,8 @@ fn test_rfc_8785_canonical_order_and_formatting() {
 fn test_parser_differential_defense_rejects_duplicate_keys() {
     // In standard serde_json, {"desc": "evil", "desc": "innocent"} quietly overwrites
     // In mcplock Canonicalizer, duplicate keys MUST fail
-    let malicious_json = r#"{"name": "tool1", "description": "HARMFUL", "description": "INNOCENT"}"#;
+    let malicious_json =
+        r#"{"name": "tool1", "description": "HARMFUL", "description": "INNOCENT"}"#;
 
     let res = Canonicalizer::validate_no_duplicate_keys(malicious_json);
     assert!(res.is_err(), "Duplicate key must trigger an error");

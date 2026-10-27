@@ -114,7 +114,9 @@ enum Commands {
 #[tokio::main]
 async fn main() -> Result<()> {
     fmt()
-        .with_env_filter(EnvFilter::from_default_env().add_directive("heimdall=info".parse().unwrap()))
+        .with_env_filter(
+            EnvFilter::from_default_env().add_directive("heimdall=info".parse().unwrap()),
+        )
         .init();
 
     let cli = Cli::parse();
@@ -127,7 +129,12 @@ async fn main() -> Result<()> {
             args,
             whitelist_targets,
         } => {
-            println!("{}", "\n🔒 Initializing heimdall-lock.json cryptographic pin...".bold().cyan());
+            println!(
+                "{}",
+                "\n🔒 Initializing heimdall-lock.json cryptographic pin..."
+                    .bold()
+                    .cyan()
+            );
 
             let (signing_key, _verifying_key) = Manifest::generate_keypair();
 
@@ -157,14 +164,23 @@ async fn main() -> Result<()> {
 
             manifest.save_to_file(&out)?;
 
-            println!("{} Created signed lockfile at: {}", "✓".bold().green(), out.display());
+            println!(
+                "{} Created signed lockfile at: {}",
+                "✓".bold().green(),
+                out.display()
+            );
             println!("  Public Key: {}", manifest.public_key.dimmed());
             println!("  Signature:  {}", manifest.signature.dimmed());
             println!("  Locked Tools: {}", manifest.payload.tools.len());
         }
 
         Commands::Verify { lockfile } => {
-            println!("{}", "\n🔍 Verifying cryptographic heimdall-lock.json...".bold().cyan());
+            println!(
+                "{}",
+                "\n🔍 Verifying cryptographic heimdall-lock.json..."
+                    .bold()
+                    .cyan()
+            );
             match Manifest::load_from_file(&lockfile) {
                 Ok(m) => {
                     println!("{} Signature verified successfully!", "✓".bold().green());
@@ -172,7 +188,12 @@ async fn main() -> Result<()> {
                     println!("  Ed25519 Key:   {}", m.public_key.dimmed());
                     println!("  Tools Count:   {}", m.payload.tools.len());
                     for (name, tool) in &m.payload.tools {
-                        println!("    - {:<18} [{:?}] Digest: {}", name, tool.classification, tool.composite_digest.chars().take(12).collect::<String>());
+                        println!(
+                            "    - {:<18} [{:?}] Digest: {}",
+                            name,
+                            tool.classification,
+                            tool.composite_digest.chars().take(12).collect::<String>()
+                        );
                     }
                 }
                 Err(e) => {
@@ -184,13 +205,25 @@ async fn main() -> Result<()> {
 
         Commands::Wrap { config, bin_path } => {
             let target_path = resolve_config_target(config)?;
-            println!("{}", "\n🛡️  Wrapping MCP Configuration with heimdall...".bold().cyan());
+            println!(
+                "{}",
+                "\n🛡️  Wrapping MCP Configuration with heimdall..."
+                    .bold()
+                    .cyan()
+            );
             println!("Target Config: {}", target_path.display());
 
             match ConfigManager::wrap_config(&target_path, bin_path.as_deref()) {
                 Ok((count, backup)) => {
-                    println!("{} Successfully wrapped {} server(s) with heimdall!", "✓".bold().green(), count);
-                    println!("   Backup saved to: {}", backup.display().to_string().dimmed());
+                    println!(
+                        "{} Successfully wrapped {} server(s) with heimdall!",
+                        "✓".bold().green(),
+                        count
+                    );
+                    println!(
+                        "   Backup saved to: {}",
+                        backup.display().to_string().dimmed()
+                    );
                     println!("   All MCP tools are now protected by cryptographic pinning and DIFC taint firewall.");
                 }
                 Err(e) => {
@@ -202,11 +235,20 @@ async fn main() -> Result<()> {
 
         Commands::Unwrap { config } => {
             let target_path = resolve_config_target(config)?;
-            println!("{}", "\n↩️  Restoring original MCP Configuration...".bold().cyan());
+            println!(
+                "{}",
+                "\n↩️  Restoring original MCP Configuration..."
+                    .bold()
+                    .cyan()
+            );
 
             match ConfigManager::unwrap_config(&target_path) {
                 Ok(restored_from) => {
-                    println!("{} Config restored successfully from backup: {}", "✓".bold().green(), restored_from.display());
+                    println!(
+                        "{} Config restored successfully from backup: {}",
+                        "✓".bold().green(),
+                        restored_from.display()
+                    );
                 }
                 Err(e) => {
                     eprintln!("{} Restore failed: {}", "✗".bold().red(), e);
@@ -237,7 +279,10 @@ async fn main() -> Result<()> {
             info!("Starting heimdall stdio security firewall...");
 
             let manifest = Manifest::load_from_file(&lockfile).ok();
-            let whitelist = manifest.as_ref().map(|m| m.payload.whitelist_targets.clone()).unwrap_or_default();
+            let whitelist = manifest
+                .as_ref()
+                .map(|m| m.payload.whitelist_targets.clone())
+                .unwrap_or_default();
 
             let taint_engine = Arc::new(SessionTaintEngine::new(strict_isolation, &whitelist));
             let policy = if rug_pull_policy == "fail-closed" {
@@ -256,16 +301,28 @@ async fn main() -> Result<()> {
             info!("heimdall stdio proxy initialized and listening on stdio.");
         }
 
-        Commands::TestBench { llm_url, model, api_key } => {
+        Commands::TestBench {
+            llm_url,
+            model,
+            api_key,
+        } => {
             let backend = if let Some(url) = llm_url {
-                println!("{} Connecting to Local LLM at: {} (Model: {})", "ℹ".bold().blue(), url, model);
+                println!(
+                    "{} Connecting to Local LLM at: {} (Model: {})",
+                    "ℹ".bold().blue(),
+                    url,
+                    model
+                );
                 LlmBackend::OpenAiCompatible {
                     base_url: url,
                     model_name: model,
                     api_key,
                 }
             } else {
-                println!("{} Using Built-in Deterministic Reasoning Agent Simulator", "ℹ".bold().blue());
+                println!(
+                    "{} Using Built-in Deterministic Reasoning Agent Simulator",
+                    "ℹ".bold().blue()
+                );
                 LlmBackend::DeterministicSimulator
             };
 
@@ -288,7 +345,12 @@ fn resolve_config_target(provided: Option<PathBuf>) -> Result<PathBuf> {
 
     let detected = ConfigManager::detect_configs();
     if let Some(first) = detected.first() {
-        println!("{} Auto-detected {} configuration at: {}", "ℹ".blue(), first.host_name, first.path.display());
+        println!(
+            "{} Auto-detected {} configuration at: {}",
+            "ℹ".blue(),
+            first.host_name,
+            first.path.display()
+        );
         Ok(first.path.clone())
     } else {
         Err(heimdall_mcp::error::HeimdallError::InvalidConfiguration(

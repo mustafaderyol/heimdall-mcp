@@ -1,4 +1,6 @@
-use heimdall_mcp::lockfile::manifest::{LockedProcess, LockedTool, Manifest, ToolVerificationResult};
+use heimdall_mcp::lockfile::manifest::{
+    LockedProcess, LockedTool, Manifest, ToolVerificationResult,
+};
 use serde_json::json;
 
 #[test]
@@ -17,7 +19,8 @@ fn test_ed25519_manifest_signing_and_tamper_detection() {
         vec![tool],
         vec!["company.com".into()],
         &signing_key,
-    ).unwrap();
+    )
+    .unwrap();
 
     // Verification must pass on pristine manifest
     assert!(manifest.verify_signature().is_ok());
@@ -37,13 +40,8 @@ fn test_rug_pull_tool_modification_detection() {
     });
 
     let tool = LockedTool::from_tool_definition(&clean_tool_val, None).unwrap();
-    let manifest = Manifest::new(
-        "server-1".into(),
-        None,
-        vec![tool],
-        vec![],
-        &signing_key,
-    ).unwrap();
+    let manifest =
+        Manifest::new("server-1".into(), None, vec![tool], vec![], &signing_key).unwrap();
 
     // Server mutates description dynamically
     let mutated_tool_val = json!({
@@ -55,7 +53,9 @@ fn test_rug_pull_tool_modification_detection() {
     let results = manifest.verify_tools_list(&[mutated_tool_val]);
     assert_eq!(results.len(), 1);
     match &results[0] {
-        ToolVerificationResult::RugPull { tool_name, field, .. } => {
+        ToolVerificationResult::RugPull {
+            tool_name, field, ..
+        } => {
             assert_eq!(tool_name, "read_user");
             assert_eq!(field, "description");
         }
@@ -67,16 +67,47 @@ fn test_rug_pull_tool_modification_detection() {
 fn test_cve_2025_54136_process_pinning() {
     let proc = LockedProcess::new(
         "python3".to_string(),
-        vec!["server.py".to_string(), "--port".to_string(), "8080".to_string()],
+        vec![
+            "server.py".to_string(),
+            "--port".to_string(),
+            "8080".to_string(),
+        ],
         vec!["PATH".to_string(), "PYTHONPATH".to_string()],
-    ).unwrap();
+    )
+    .unwrap();
 
     // Valid check
-    assert!(proc.verify("python3", &["server.py".to_string(), "--port".to_string(), "8080".to_string()], &["PATH".to_string(), "PYTHONPATH".to_string()]).is_ok());
+    assert!(proc
+        .verify(
+            "python3",
+            &[
+                "server.py".to_string(),
+                "--port".to_string(),
+                "8080".to_string()
+            ],
+            &["PATH".to_string(), "PYTHONPATH".to_string()]
+        )
+        .is_ok());
 
     // Tampered command (e.g. replacing python3 with sh)
-    assert!(proc.verify("sh", &["server.py".to_string(), "--port".to_string(), "8080".to_string()], &["PATH".to_string(), "PYTHONPATH".to_string()]).is_err());
+    assert!(proc
+        .verify(
+            "sh",
+            &[
+                "server.py".to_string(),
+                "--port".to_string(),
+                "8080".to_string()
+            ],
+            &["PATH".to_string(), "PYTHONPATH".to_string()]
+        )
+        .is_err());
 
     // Tampered args
-    assert!(proc.verify("python3", &["malicious.py".to_string()], &["PATH".to_string()]).is_err());
+    assert!(proc
+        .verify(
+            "python3",
+            &["malicious.py".to_string()],
+            &["PATH".to_string()]
+        )
+        .is_err());
 }

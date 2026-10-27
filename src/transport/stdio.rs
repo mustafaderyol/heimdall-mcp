@@ -59,17 +59,16 @@ impl StdioProxy {
         let allowed_set: HashSet<String> = allowed_envs.iter().cloned().collect();
         for (k, _v) in std::env::vars() {
             let upper = k.to_uppercase();
-            if upper.contains("SECRET")
+            if (upper.contains("SECRET")
                 || upper.contains("KEY")
                 || upper.contains("TOKEN")
                 || upper.contains("PASSWORD")
                 || upper.contains("AUTH")
                 || upper.starts_with("AWS_")
-                || upper.starts_with("GITHUB_")
+                || upper.starts_with("GITHUB_"))
+                && !allowed_set.contains(&k)
             {
-                if !allowed_set.contains(&k) {
-                    cmd.env_remove(&k);
-                }
+                cmd.env_remove(&k);
             }
         }
 
@@ -77,10 +76,7 @@ impl StdioProxy {
     }
 
     /// Processes an incoming JSON-RPC message from Client (Agent/Host) to Server
-    pub async fn handle_client_to_server(
-        &self,
-        raw_line: &str,
-    ) -> Result<Option<String>> {
+    pub async fn handle_client_to_server(&self, raw_line: &str) -> Result<Option<String>> {
         let parsed: Value = match serde_json::from_str(raw_line) {
             Ok(v) => v,
             Err(_) => return Ok(Some(raw_line.to_string())), // Pass through non-JSON
@@ -97,7 +93,10 @@ impl StdioProxy {
 
                 // Save pending request ID for response taint tracking
                 if let Some(req_id) = id.clone() {
-                    self.pending_tool_calls.lock().await.insert(req_id, tool_name.to_string());
+                    self.pending_tool_calls
+                        .lock()
+                        .await
+                        .insert(req_id, tool_name.to_string());
                 }
 
                 // Determine classification
@@ -105,7 +104,10 @@ impl StdioProxy {
 
                 // If calling an external sink, run taint engine verification
                 if classification == ToolClassification::SinkExternal {
-                    if let Err(e) = self.taint_engine.verify_sink_arguments(tool_name, &args_json) {
+                    if let Err(e) = self
+                        .taint_engine
+                        .verify_sink_arguments(tool_name, &args_json)
+                    {
                         warn!("mcp-lock FIREWALL BLOCKED tools/call: {}", e);
                         // Return JSON-RPC error response directly to client
                         let err_resp = json!({
@@ -130,10 +132,7 @@ impl StdioProxy {
     }
 
     /// Processes an incoming JSON-RPC message from Server to Client (Agent/Host)
-    pub async fn handle_server_to_client(
-        &self,
-        raw_line: &str,
-    ) -> Result<Option<String>> {
+    pub async fn handle_server_to_client(&self, raw_line: &str) -> Result<Option<String>> {
         let mut parsed: Value = match serde_json::from_str(raw_line) {
             Ok(v) => v,
             Err(_) => return Ok(Some(raw_line.to_string())),
@@ -153,7 +152,10 @@ impl StdioProxy {
                             self.taint_engine.mark_sensitive_output(&result_str);
                         }
                         ToolClassification::SourceUntrusted => {
-                            info!("Dropping session integrity from untrusted tool '{}'", tool_name);
+                            info!(
+                                "Dropping session integrity from untrusted tool '{}'",
+                                tool_name
+                            );
                             self.taint_engine.mark_untrusted_output(&tool_name);
                         }
                         _ => {}
@@ -170,7 +172,13 @@ impl StdioProxy {
                     let mut has_rug_pull = false;
 
                     for r in &verification_results {
-                        if let ToolVerificationResult::RugPull { tool_name, field, expected, actual } = r {
+                        if let ToolVerificationResult::RugPull {
+                            tool_name,
+                            field,
+                            expected,
+                            actual,
+                        } = r
+                        {
                             has_rug_pull = true;
                             warn!(
                                 "RUG PULL DETECTED: tool '{}', field '{}' mismatch. Expected: {}, Actual: {}",
@@ -182,17 +190,21 @@ impl StdioProxy {
                     if has_rug_pull {
                         match self.rug_pull_policy {
                             RugPullPolicy::FailClosed => {
-                                return Err(McpLockError::Violation(SecurityViolation::RugPullDetected {
-                                    tool_name: "multiple".into(),
-                                    field: "schema/description".into(),
-                                    expected: "pinned manifest".into(),
-                                    actual: "modified dynamically".into(),
-                                }));
+                                return Err(McpLockError::Violation(
+                                    SecurityViolation::RugPullDetected {
+                                        tool_name: "multiple".into(),
+                                        field: "schema/description".into(),
+                                        expected: "pinned manifest".into(),
+                                        actual: "modified dynamically".into(),
+                                    },
+                                ));
                             }
                             RugPullPolicy::SanitizeAndQuarantine => {
                                 info!("Applying Context Compiler & Schema Sanitizer to quarantine modified tools");
-                                let known_tools: HashSet<String> = manifest.payload.tools.keys().cloned().collect();
-                                let sanitizer = SchemaSanitizer::new(self.sanitize_mode, known_tools);
+                                let known_tools: HashSet<String> =
+                                    manifest.payload.tools.keys().cloned().collect();
+                                let sanitizer =
+                                    SchemaSanitizer::new(self.sanitize_mode, known_tools);
                                 for tool in tools_arr.iter_mut() {
                                     sanitizer.sanitize_tool(tool);
                                 }
@@ -200,7 +212,8 @@ impl StdioProxy {
                         }
                     } else {
                         // Apply context compiler to strip invisible zero-width chars and imperative triggers
-                        let known_tools: HashSet<String> = manifest.payload.tools.keys().cloned().collect();
+                        let known_tools: HashSet<String> =
+                            manifest.payload.tools.keys().cloned().collect();
                         let sanitizer = SchemaSanitizer::new(self.sanitize_mode, known_tools);
                         for tool in tools_arr.iter_mut() {
                             sanitizer.sanitize_tool(tool);
@@ -221,9 +234,17 @@ impl StdioProxy {
         }
         // Fallback heuristic classification
         let lower = tool_name.to_lowercase();
-        if lower.contains("read") || lower.contains("file") || lower.contains("secret") || lower.contains("env") {
+        if lower.contains("read")
+            || lower.contains("file")
+            || lower.contains("secret")
+            || lower.contains("env")
+        {
             ToolClassification::SourceSensitive
-        } else if lower.contains("send") || lower.contains("post") || lower.contains("webhook") || lower.contains("mail") {
+        } else if lower.contains("send")
+            || lower.contains("post")
+            || lower.contains("webhook")
+            || lower.contains("mail")
+        {
             ToolClassification::SinkExternal
         } else if lower.contains("fetch") || lower.contains("scrape") {
             ToolClassification::SourceUntrusted

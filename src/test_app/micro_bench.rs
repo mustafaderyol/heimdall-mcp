@@ -24,9 +24,22 @@ pub struct PerformanceBenchmark;
 
 impl PerformanceBenchmark {
     pub fn run_all() -> Vec<MicroBenchResult> {
-        println!("{}", "\n================================================================================".cyan());
-        println!("{}", "            mcp-lock HIGH-PRECISION MICRO-BENCHMARKS & LATENCY PROFILER        ".bold().cyan());
-        println!("{}", "================================================================================\n".cyan());
+        println!(
+            "{}",
+            "\n================================================================================"
+                .cyan()
+        );
+        println!(
+            "{}",
+            "         Heimdall MCP HIGH-PRECISION MICRO-BENCHMARKS & LATENCY PROFILER      "
+                .bold()
+                .cyan()
+        );
+        println!(
+            "{}",
+            "================================================================================\n"
+                .cyan()
+        );
 
         let mut results = Vec::new();
 
@@ -52,7 +65,11 @@ impl PerformanceBenchmark {
         results
     }
 
-    fn calculate_stats(mut samples: Vec<u128>, total_time_secs: f64, bytes_processed: Option<usize>) -> (u128, u128, u128, u128, u128, f64, Option<f64>) {
+    fn calculate_stats(
+        mut samples: Vec<u128>,
+        total_time_secs: f64,
+        bytes_processed: Option<usize>,
+    ) -> (u128, u128, u128, u128, u128, f64, Option<f64>) {
         samples.sort_unstable();
         let len = samples.len();
         let min_ns = samples[0];
@@ -64,7 +81,15 @@ impl PerformanceBenchmark {
         let ops_per_sec = len as f64 / total_time_secs;
         let mb_per_sec = bytes_processed.map(|b| (b as f64 / 1_048_576.0) / total_time_secs);
 
-        (min_ns, p50_ns, p90_ns, p99_ns, max_ns, ops_per_sec, mb_per_sec)
+        (
+            min_ns,
+            p50_ns,
+            p90_ns,
+            p99_ns,
+            max_ns,
+            ops_per_sec,
+            mb_per_sec,
+        )
     }
 
     /// Benchmark 1: JCS Canonicalization on 1 KB tool schema
@@ -326,7 +351,8 @@ impl PerformanceBenchmark {
         let args = json!({
             "url": "https://internal.company.com/webhook",
             "message": "User query processed successfully with status 200 OK."
-        }).to_string();
+        })
+        .to_string();
 
         let iterations = 10_000;
         let mut samples = Vec::with_capacity(iterations);
@@ -361,8 +387,10 @@ impl PerformanceBenchmark {
     }
 
     fn print_summary_table(results: &[MicroBenchResult]) {
-        println!("{:<32} | {:<24} | {:<10} | {:<10} | {:<10} | {:<14}",
-            "BENCHMARK COMPONENT", "SCENARIO", "p50 (MED)", "p99", "MAX", "THROUGHPUT");
+        println!(
+            "{:<32} | {:<24} | {:<10} | {:<10} | {:<10} | {:<14}",
+            "BENCHMARK COMPONENT", "SCENARIO", "p50 (MED)", "p99", "MAX", "THROUGHPUT"
+        );
         println!("{}", "---------------------------------------------------------------------------------------------------------------".dimmed());
 
         for r in results {
@@ -393,16 +421,23 @@ impl PerformanceBenchmark {
             let throughput_fmt = if let Some(mb) = r.mb_per_sec {
                 format!("{:.1} MB/s", mb).bold().cyan()
             } else if r.ops_per_sec >= 1_000_000.0 {
-                format!("{:.2}M ops/s", r.ops_per_sec / 1_000_000.0).bold().cyan()
+                format!("{:.2}M ops/s", r.ops_per_sec / 1_000_000.0)
+                    .bold()
+                    .cyan()
             } else {
                 format!("{:.0} ops/s", r.ops_per_sec).bold().cyan()
             };
 
-            println!("{:<32} | {:<24} | {:<19} | {:<19} | {:<19} | {}",
-                r.name, r.scenario, p50_fmt, p99_fmt, max_fmt, throughput_fmt);
+            println!(
+                "{:<32} | {:<24} | {:<19} | {:<19} | {:<19} | {}",
+                r.name, r.scenario, p50_fmt, p99_fmt, max_fmt, throughput_fmt
+            );
         }
 
         println!("{}", "---------------------------------------------------------------------------------------------------------------".dimmed());
-        println!("\n{} All components well within < 2.0 ms p99 latency SLA.\n", "PERFORMANCE SLA ACHIEVED:".bold().green());
+        println!(
+            "\n{} All components well within < 2.0 ms p99 latency SLA.\n",
+            "PERFORMANCE SLA ACHIEVED:".bold().green()
+        );
     }
 }

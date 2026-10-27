@@ -21,4 +21,6 @@ pub use test_app::{
     AgentSimulator, BenchmarkResult, LlmBackend, MicroBenchResult, MockMcpServer,
     PerformanceBenchmark, TestHarness,
 };
-pub use transport::{RugPullPolicy, SandboxManager, SandboxProfile, StdioProxy, StreamableHttpServer};
+pub use transport::{
+    RugPullPolicy, SandboxManager, SandboxProfile, StdioProxy, StreamableHttpServer,
+};

@@ -16,7 +16,11 @@ fn test_wrap_and_unwrap_roundtrip() {
 
     let temp = NamedTempFile::new().unwrap();
     let path = temp.path().to_path_buf();
-    fs::write(&path, serde_json::to_string_pretty(&initial_config).unwrap()).unwrap();
+    fs::write(
+        &path,
+        serde_json::to_string_pretty(&initial_config).unwrap(),
+    )
+    .unwrap();
 
     // 1. Audit before wrap: Should be vulnerable (Grade F / C)
     let audit_before = ConfigManager::audit_config(&path).unwrap();
@@ -45,5 +49,8 @@ fn test_wrap_and_unwrap_roundtrip() {
 
     let restored_raw = fs::read_to_string(&path).unwrap();
     let restored_json: serde_json::Value = serde_json::from_str(&restored_raw).unwrap();
-    assert_eq!(restored_json["mcpServers"]["test_server"]["command"], "node");
+    assert_eq!(
+        restored_json["mcpServers"]["test_server"]["command"],
+        "node"
+    );
 }

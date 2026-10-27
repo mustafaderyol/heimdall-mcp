@@ -34,7 +34,8 @@ impl SchemaSanitizer {
                     return false;
                 }
                 // Strip BiDi override characters
-                if ('\u{202A}'..='\u{202E}').contains(&c) || ('\u{2066}'..='\u{2069}').contains(&c) {
+                if ('\u{202A}'..='\u{202E}').contains(&c) || ('\u{2066}'..='\u{2069}').contains(&c)
+                {
                     return false;
                 }
                 // Strip non-printable ASCII control characters except \n and \t
@@ -94,7 +95,7 @@ impl SchemaSanitizer {
         let mut clean_sentences = Vec::new();
 
         // Split by sentence terminators
-        for sentence in text.split(|c| c == '.' || c == '!' || c == '?' || c == '\n') {
+        for sentence in text.split(['.', '!', '?', '\n']) {
             let trimmed = sentence.trim();
             if trimmed.is_empty() {
                 continue;
@@ -103,7 +104,9 @@ impl SchemaSanitizer {
             let lower = trimmed.to_lowercase();
 
             // Check imperative trigger phrases
-            let has_trigger = imperative_triggers.iter().any(|&trigger| lower.contains(trigger));
+            let has_trigger = imperative_triggers
+                .iter()
+                .any(|&trigger| lower.contains(trigger));
             if has_trigger {
                 continue;
             }
@@ -161,8 +164,12 @@ impl SchemaSanitizer {
             obj.remove("x-mcp-header");
 
             // Sanitize title and description in schema root
-            if let Some(desc) = obj.get_mut("description").and_then(|d| d.as_str().map(|s| s.to_string())) {
-                *obj.get_mut("description").unwrap() = Value::String(self.sanitize_description(&desc));
+            if let Some(desc) = obj
+                .get_mut("description")
+                .and_then(|d| d.as_str().map(|s| s.to_string()))
+            {
+                *obj.get_mut("description").unwrap() =
+                    Value::String(self.sanitize_description(&desc));
             }
 
             if let Some(props) = obj.get_mut("properties").and_then(|p| p.as_object_mut()) {
@@ -184,8 +191,12 @@ impl SchemaSanitizer {
                 for (_param_name, param_spec) in props.iter_mut() {
                     if let Some(param_obj) = param_spec.as_object_mut() {
                         param_obj.remove("x-mcp-header");
-                        if let Some(desc) = param_obj.get_mut("description").and_then(|d| d.as_str().map(|s| s.to_string())) {
-                            *param_obj.get_mut("description").unwrap() = Value::String(self.sanitize_description(&desc));
+                        if let Some(desc) = param_obj
+                            .get_mut("description")
+                            .and_then(|d| d.as_str().map(|s| s.to_string()))
+                        {
+                            *param_obj.get_mut("description").unwrap() =
+                                Value::String(self.sanitize_description(&desc));
                         }
                     }
                 }
@@ -204,7 +215,11 @@ impl SchemaSanitizer {
 
     /// Compiles and sanitizes a full tool definition object
     pub fn sanitize_tool(&self, tool: &mut Value) {
-        let name = tool.get("name").and_then(|v| v.as_str()).unwrap_or("").to_string();
+        let name = tool
+            .get("name")
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .to_string();
 
         match self.mode {
             SanitizeMode::CompilerPrune => {
